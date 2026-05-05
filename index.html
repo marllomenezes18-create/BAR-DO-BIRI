@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bar Gestão Total</title>
+    <title>Bar Gestão 100% Zap</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-black text-white font-sans pb-24">
@@ -11,7 +11,7 @@
     <!-- CABEÇALHO -->
     <header class="p-4 bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
         <div class="flex justify-between items-center mb-4">
-            <h1 class="font-black text-amber-500 uppercase italic tracking-tighter">BAR GESTÃO</h1>
+            <h1 class="font-black text-amber-500 uppercase italic">BAR GESTÃO</h1>
             <div id="mesAtual" class="bg-amber-500 text-black px-2 py-1 rounded font-black text-[10px]">---</div>
         </div>
         <div class="flex gap-2">
@@ -45,11 +45,11 @@
     <!-- TELA 2: PRODUTOS -->
     <section id="t-config" class="hidden p-4">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="font-black text-amber-500 uppercase italic">Meus Itens</h2>
-            <button onclick="novoItem()" class="bg-green-600 px-3 py-1 rounded font-black text-[10px]">+ NOVO</button>
+            <h2 class="font-black text-amber-500 uppercase italic text-sm">Gerenciar Itens</h2>
+            <button onclick="novoItem()" class="bg-green-600 px-3 py-1 rounded font-black text-[10px] uppercase">+ Adicionar Item</button>
         </div>
-        <div id="listaProdutos" class="space-y-4 mb-20"></div>
-        <button onclick="salvarItens()" class="fixed bottom-4 left-4 right-4 bg-amber-500 text-black p-4 rounded-xl font-black shadow-2xl z-50">SALVAR TUDO</button>
+        <div id="listaProdutos" class="space-y-4 mb-24"></div>
+        <button onclick="salvarItens()" class="fixed bottom-4 left-4 right-4 bg-amber-500 text-black p-4 rounded-xl font-black shadow-2xl z-50 uppercase text-xs">Salvar Alterações</button>
     </section>
 
     <!-- TELA 3: CAIXA -->
@@ -59,34 +59,35 @@
         <div id="listaHist" class="space-y-2"></div>
     </section>
 
-    <!-- MODAL LANÇAMENTO -->
+    <!-- MODAL DE LANÇAMENTO -->
     <div id="modal" class="hidden fixed inset-0 bg-black z-[100] flex flex-col p-6">
-        <div class="flex justify-between items-start mb-2">
+        <div class="flex justify-between items-start mb-4">
             <div>
                 <h2 id="mNome" class="text-2xl font-black italic uppercase">---</h2>
                 <div id="mTotal" class="text-4xl font-black text-amber-500 font-mono">R$ 0,00</div>
             </div>
-            <button onclick="fecharModal()" class="text-3xl">&times;</button>
+            <button onclick="fecharModal()" class="text-4xl font-light">&times;</button>
         </div>
         
         <div class="bg-zinc-900 p-3 rounded-lg mb-4 border border-zinc-800">
-            <p class="text-[9px] text-zinc-500 font-bold uppercase mb-1">Extrato de Consumo:</p>
-            <div id="mExtrato" class="text-xs text-amber-200 font-medium leading-tight">Nenhum item...</div>
+            <p class="text-[9px] text-zinc-500 font-black uppercase mb-1">Extrato detalhado:</p>
+            <div id="mExtrato" class="text-xs text-green-400 font-bold leading-tight">Nenhum item...</div>
         </div>
 
-        <div id="mGrid" class="grid grid-cols-2 gap-3 overflow-y-auto mb-4"></div>
+        <div id="mGrid" class="grid grid-cols-2 gap-3 overflow-y-auto mb-4 pr-1"></div>
         
         <div class="mt-auto grid grid-cols-2 gap-2">
-            <button onclick="finalizar(true)" class="bg-green-600 p-4 rounded-xl font-black text-[10px] uppercase flex items-center justify-center gap-2">
-                <span>PAGAR + ZAP 📱</span>
+            <button onclick="finalizar(true)" class="bg-green-600 p-5 rounded-xl font-black text-[10px] uppercase flex items-center justify-center gap-2 shadow-lg">
+                <span>Pagar + WhatsApp 📱</span>
             </button>
-            <button onclick="finalizar(false)" class="bg-zinc-800 p-4 rounded-xl font-black text-[10px] uppercase">
-                SÓ PAGAR
+            <button onclick="finalizar(false)" class="bg-zinc-800 p-5 rounded-xl font-black text-[10px] uppercase">
+                Apenas Pagar
             </button>
         </div>
     </div>
 
     <script>
+        // Iniciar Dados
         let db_p = JSON.parse(localStorage.getItem('bar_p')) || [{i:'🍺', n:'CERVEJA', p:10}, {i:'🍛', n:'REFEIÇÃO', p:25}];
         let db_c = JSON.parse(localStorage.getItem('bar_c')) || [];
         let db_h = JSON.parse(localStorage.getItem('bar_h')) || [];
@@ -99,6 +100,7 @@
         }
         let fMes = mes();
 
+        // Navegação
         function tela(t) {
             ['vendas','config','caixa'].forEach(x => {
                 document.getElementById('t-'+x).classList.add('hidden');
@@ -109,6 +111,7 @@
             if(t==='caixa') renderCaixa();
         }
 
+        // Criar Conta
         function novaConta() {
             const n = document.getElementById('nomeCliente').value;
             if(!n) return;
@@ -119,22 +122,26 @@
 
         function renderContas() {
             document.getElementById('listaContas').innerHTML = db_c.map((c, i) => `
-                <div onclick="abrirModal(${i})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex justify-between items-center active:scale-95 transition-transform">
+                <div onclick="abrirModal(${i})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex justify-between items-center active:scale-95 transition-all">
                     <div>
                         <p class="font-black italic uppercase text-lg">${c.nome}</p>
-                        <p class="text-[9px] text-zinc-500 uppercase">${c.lista.length} itens pedidos</p>
+                        <p class="text-[8px] text-zinc-500 uppercase">${c.lista ? c.lista.length : 0} produtos no extrato</p>
                     </div>
                     <span class="font-black text-amber-500 text-xl">R$ ${c.total.toFixed(2)}</span>
                 </div>`).join('');
             resumo();
         }
 
+        // Abrir Modal de Lançamento
         function abrirModal(i) {
             idxAtivo = i;
+            if(!db_c[idxAtivo].lista) db_c[idxAtivo].lista = []; // Garantia de erro
+            
             document.getElementById('mNome').innerText = db_c[idxAtivo].nome;
             updateExtrato();
+            
             document.getElementById('mGrid').innerHTML = db_p.map(p => `
-                <button onclick="addValor('${p.n}', ${p.p})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex flex-col items-center active:bg-zinc-700">
+                <button onclick="addValor('${p.n}', ${p.p})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex flex-col items-center active:bg-amber-500 active:text-black">
                     <span class="text-2xl">${p.i}</span>
                     <span class="text-[8px] font-black uppercase mt-1">${p.n}</span>
                     <span class="font-black text-sm italic text-amber-500">R$ ${p.p}</span>
@@ -142,42 +149,66 @@
             document.getElementById('modal').classList.remove('hidden');
         }
 
+        // Adicionar Item no Balcão
         function addValor(nome, preco) {
             db_c[idxAtivo].total += preco;
             db_c[idxAtivo].lista.push(nome);
             updateExtrato();
-            save(); renderContas();
+            save(); 
+            renderContas();
         }
 
+        // Atualizar visual do extrato
         function updateExtrato() {
             const c = db_c[idxAtivo];
             document.getElementById('mTotal').innerText = "R$ " + c.total.toFixed(2);
             
-            const contagem = {};
-            c.lista.forEach(x => contagem[x] = (contagem[x] || 0) + 1);
-            const resumo = Object.entries(contagem).map(([n, q]) => `${q}x ${n}`).join(', ');
-            
-            document.getElementById('mExtrato').innerText = resumo || "Nenhum item consumido.";
-        }
-
-        function finalizar(zap) {
-            const c = db_c[idxAtivo];
-            if(c.total <= 0) return alert("Conta está zerada!");
-
-            const contagem = {};
-            c.lista.forEach(x => contagem[x] = (contagem[x] || 0) + 1);
-            const extratoTexto = Object.entries(contagem).map(([n, q]) => `${q}x ${n}`).join(', ');
-
-            if(zap) {
-                const textoZap = `*RECIBO - BAR GESTÃO*\n\n👤 Cliente: *${c.nome}*\n📝 Consumo: ${extratoTexto}\n💰 *TOTAL: R$ ${c.total.toFixed(2)}*`;
-                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(textoZap)}`);
+            if(!c.lista || c.lista.length === 0) {
+                document.getElementById('mExtrato').innerText = "Nenhum item consumido.";
+                return;
             }
 
-            db_h.push({id: Date.now(), n: c.nome, v: c.total, i: extratoTexto, m: mes(), t: 'V', d: new Date().toLocaleString()});
-            db_c.splice(idxAtivo, 1);
-            save(); renderContas(); fecharModal();
+            const contagem = {};
+            c.lista.forEach(x => contagem[x] = (contagem[x] || 0) + 1);
+            const texto = Object.entries(contagem).map(([n, q]) => `${q}x ${n}`).join(', ');
+            
+            document.getElementById('mExtrato').innerText = texto;
         }
 
+        // Finalizar Conta e Enviar Zap
+        function finalizar(zap) {
+            const c = db_c[idxAtivo];
+            if(c.total <= 0) return alert("Adicione produtos primeiro!");
+
+            const contagem = {};
+            c.lista.forEach(x => contagem[x] = (contagem[x] || 0) + 1);
+            const resumoTexto = Object.entries(contagem).map(([n, q]) => `${q}x ${n}`).join(', ');
+
+            if(zap) {
+                const cabecalho = "*RECIBO DO BAR*\n------------------\n";
+                const corpo = `👤 Cliente: *${c.nome}*\n📝 Itens: ${resumoTexto}\n💰 *TOTAL: R$ ${c.total.toFixed(2)}*\n------------------\nObrigado pela preferência!`;
+                const url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(cabecalho + corpo);
+                window.open(url, '_blank');
+            }
+
+            // Salvar no Histórico
+            db_h.push({
+                id: Date.now(), 
+                n: c.nome, 
+                v: c.total, 
+                i: resumoTexto, 
+                m: mes(), 
+                t: 'V', 
+                d: new Date().toLocaleString('pt-BR')
+            });
+
+            db_c.splice(idxAtivo, 1);
+            save(); 
+            renderContas(); 
+            fecharModal();
+        }
+
+        // Caixa
         function renderCaixa() {
             const meses = [...new Set(db_h.map(h => h.m))];
             if(!meses.includes(mes())) meses.push(mes());
@@ -194,7 +225,7 @@
                         <span class="text-[10px] font-black uppercase">${h.n}</span>
                         <span class="${h.t==='G'?'text-red-500':'text-green-500'} font-black">R$ ${h.v.toFixed(2)}</span>
                     </div>
-                    ${h.i ? `<p class="text-[8px] text-amber-200/50 font-mono italic">${h.i}</p>` : ''}
+                    <p class="text-[8px] text-zinc-500 font-mono">${h.i || 'Sem detalhes'}</p>
                     <p class="text-[7px] text-zinc-600 mt-1">${h.d}</p>
                 </div>`}).join('');
             resumo();
@@ -211,24 +242,20 @@
             }
         }
 
+        // Cardápio
         function renderConfig() {
             document.getElementById('listaProdutos').innerHTML = db_p.map((p, i) => `
                 <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 space-y-2">
                     <div class="flex gap-2">
-                        <input id="pi-${i}" class="w-10 bg-black p-2 rounded text-center" value="${p.i}" readonly>
+                        <input id="pi-${i}" class="w-10 bg-black p-2 rounded text-center text-xl" value="${p.i}" readonly>
                         <input id="pn-${i}" class="flex-1 bg-black p-2 rounded font-black text-xs uppercase" value="${p.n}">
                         <button onclick="db_p.splice(${i},1);renderConfig()" class="text-red-500 font-bold px-2">X</button>
                     </div>
                     <div class="flex gap-1 overflow-x-auto pb-1">
-                        ${emojis.map(e => `<button onclick="document.getElementById('pi-${i}').value='${e}'" class="bg-zinc-800 p-2 rounded">${e}</button>`).join('')}
+                        ${emojis.map(e => `<button onclick="document.getElementById('pi-${i}').value='${e}'" class="bg-zinc-800 p-2 rounded text-lg">${e}</button>`).join('')}
                     </div>
-                    <input id="pp-${i}" type="number" class="w-full bg-black p-2 rounded font-black text-green-500" value="${p.p}">
+                    <input id="pp-${i}" type="number" class="w-full bg-black p-3 rounded font-black text-green-500" value="${p.p}">
                 </div>`).join('');
-        }
-
-        function lancarGasto() {
-            const n = prompt("Gasto?"); const v = parseFloat(prompt("Valor?"));
-            if(n && v) { db_h.push({id: Date.now(), n: "GASTO: "+n, v: v, m: mes(), t: 'G', d: new Date().toLocaleString()}); save(); renderCaixa(); }
         }
 
         function salvarItens() {
@@ -237,16 +264,23 @@
                 p.n = document.getElementById('pn-'+i).value;
                 p.p = parseFloat(document.getElementById('pp-'+i).value) || 0;
             });
-            save(); alert("Itens Salvos!"); tela('vendas');
+            save(); alert("Salvo!"); tela('vendas');
+        }
+
+        function lancarGasto() {
+            const n = prompt("Gasto?"); const v = parseFloat(prompt("Valor?"));
+            if(n && v) { db_h.push({id: Date.now(), n: "GASTO: "+n, v: v, m: mes(), t: 'G', d: new Date().toLocaleString()}); save(); renderCaixa(); }
         }
 
         function novoItem() { db_p.push({i:'🏷️', n:'NOVO', p:0}); renderConfig(); }
+        
         function save() {
             localStorage.setItem('bar_p', JSON.stringify(db_p));
             localStorage.setItem('bar_c', JSON.stringify(db_c));
             localStorage.setItem('bar_h', JSON.stringify(db_h));
             resumo();
         }
+        
         function resumo() {
             const hMes = db_h.filter(h => h.m === mes());
             const v = hMes.filter(h => h.t === 'V').reduce((a, b) => a + b.v, 0);
@@ -255,7 +289,10 @@
             document.getElementById('totalGasto').innerText = "R$ " + g.toFixed(2);
             document.getElementById('mesAtual').innerText = mes();
         }
+        
         function fecharModal() { document.getElementById('modal').classList.add('hidden'); }
+        
+        // Iniciar
         renderContas();
     </script>
 </body>
