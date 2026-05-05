@@ -8,52 +8,65 @@
 </head>
 <body class="bg-black text-white font-sans pb-24">
 
-    <header class="p-4 bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
-        <div class="flex justify-between items-center mb-4">
-            <h1 class="font-black text-amber-500 uppercase italic tracking-tighter">BAR GESTÃO CLOUD</h1>
-            <div id="mesAtual" class="bg-amber-500 text-black px-2 py-1 rounded font-black text-[10px]">---</div>
+    <!-- TELA DE LOGIN -->
+    <div id="tela-login" class="fixed inset-0 bg-black z-[200] flex flex-col items-center justify-center p-6">
+        <h1 class="font-black text-amber-500 uppercase italic tracking-tighter text-3xl mb-8">BAR GESTÃO CLOUD</h1>
+        <div class="w-full max-w-xs space-y-4">
+            <input id="senhaAcesso" type="password" placeholder="Digite a Senha" class="w-full p-4 rounded-xl bg-zinc-900 text-white font-bold border border-zinc-800 outline-none text-center">
+            <button onclick="window.verificarSenha()" class="w-full bg-amber-500 text-black p-4 rounded-xl font-black uppercase shadow-lg">Entrar</button>
         </div>
-        <div class="flex gap-2">
-            <div class="flex-1 bg-zinc-950 p-2 rounded border border-zinc-800 text-center">
-                <p class="text-[8px] text-zinc-500 font-bold uppercase">Saldo</p>
-                <p id="totalLucro" class="text-green-500 font-black text-lg font-mono">R$ 0,00</p>
+    </div>
+
+    <!-- CONTEÚDO DO APP (OCULTO INICIALMENTE) -->
+    <div id="app-content" class="hidden">
+        <header class="p-4 bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="font-black text-amber-500 uppercase italic tracking-tighter">BAR GESTÃO CLOUD</h1>
+                <div id="mesAtual" class="bg-amber-500 text-black px-2 py-1 rounded font-black text-[10px]">---</div>
             </div>
-            <div class="flex-1 bg-zinc-950 p-2 rounded border border-zinc-800 text-center">
-                <p class="text-[8px] text-red-500 font-bold uppercase">Despesas</p>
-                <p id="totalGasto" class="text-red-500 font-black text-lg font-mono">R$ 0,00</p>
+            <div class="flex gap-2">
+                <div class="flex-1 bg-zinc-950 p-2 rounded border border-zinc-800 text-center">
+                    <p class="text-[8px] text-zinc-500 font-bold uppercase">Saldo</p>
+                    <p id="totalLucro" class="text-green-500 font-black text-lg font-mono">R$ 0,00</p>
+                </div>
+                <div class="flex-1 bg-zinc-950 p-2 rounded border border-zinc-800 text-center">
+                    <p class="text-[8px] text-red-500 font-bold uppercase">Despesas</p>
+                    <p id="totalGasto" class="text-red-500 font-black text-lg font-mono">R$ 0,00</p>
+                </div>
             </div>
-        </div>
-    </header>
+        </header>
 
-    <nav class="flex p-2 bg-zinc-900 gap-1 border-b border-zinc-800">
-        <button id="b-vendas" onclick="window.tela('vendas')" class="flex-1 py-3 bg-amber-500 text-black font-black rounded-lg text-[10px]">BALCÃO</button>
-        <button id="b-config" onclick="window.tela('config')" class="flex-1 py-3 bg-zinc-800 text-zinc-400 font-black rounded-lg text-[10px]">PRODUTOS</button>
-        <button id="b-caixa" onclick="window.tela('caixa')" class="flex-1 py-3 bg-zinc-800 text-zinc-400 font-black rounded-lg text-[10px]">CAIXA</button>
-    </nav>
+        <nav class="flex p-2 bg-zinc-900 gap-1 border-b border-zinc-800">
+            <button id="b-vendas" onclick="window.tela('vendas')" class="flex-1 py-3 bg-amber-500 text-black font-black rounded-lg text-[10px]">BALCÃO</button>
+            <button id="b-config" onclick="window.tela('config')" class="flex-1 py-3 bg-zinc-800 text-zinc-400 font-black rounded-lg text-[10px]">PRODUTOS</button>
+            <button id="b-caixa" onclick="window.tela('caixa')" class="flex-1 py-3 bg-zinc-800 text-zinc-400 font-black rounded-lg text-[10px]">CAIXA</button>
+        </nav>
 
-    <section id="t-vendas" class="p-4">
-        <div class="flex gap-2 mb-6">
-            <input id="nomeCliente" type="text" placeholder="Nome do Cliente" class="flex-1 p-4 rounded-xl bg-zinc-800 text-white font-bold border border-zinc-700 outline-none">
-            <button onclick="window.novaConta()" class="bg-amber-500 text-black px-6 rounded-xl font-black text-2xl shadow-lg">+</button>
-        </div>
-        <div id="listaContas" class="space-y-3"></div>
-    </section>
+        <section id="t-vendas" class="p-4">
+            <div class="flex gap-2 mb-6">
+                <input id="nomeCliente" type="text" placeholder="Nome do Cliente" class="flex-1 p-4 rounded-xl bg-zinc-800 text-white font-bold border border-zinc-700 outline-none">
+                <button onclick="window.novaConta()" class="bg-amber-500 text-black px-6 rounded-xl font-black text-2xl shadow-lg">+</button>
+            </div>
+            <div id="listaContas" class="space-y-3"></div>
+        </section>
 
-    <section id="t-config" class="hidden p-4">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="font-black text-amber-500 uppercase italic">Meus Itens</h2>
-            <button onclick="window.novoItem()" class="bg-green-600 px-3 py-1 rounded font-black text-[10px]">+ NOVO</button>
-        </div>
-        <div id="listaProdutos" class="space-y-4 mb-20"></div>
-        <button onclick="window.salvarItens()" class="fixed bottom-4 left-4 right-4 bg-amber-500 text-black p-4 rounded-xl font-black shadow-2xl z-50 uppercase">Salvar no Cloud</button>
-    </section>
+        <section id="t-config" class="hidden p-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-black text-amber-500 uppercase italic">Meus Itens</h2>
+                <button onclick="window.novoItem()" class="bg-green-600 px-3 py-1 rounded font-black text-[10px]">+ NOVO</button>
+            </div>
+            <div id="listaProdutos" class="space-y-4 mb-20"></div>
+            <button onclick="window.salvarItens()" class="fixed bottom-4 left-4 right-4 bg-amber-500 text-black p-4 rounded-xl font-black shadow-2xl z-50 uppercase">Salvar no Cloud</button>
+        </section>
 
-    <section id="t-caixa" class="hidden p-4">
-        <div class="flex gap-2 mb-4 overflow-x-auto pb-2" id="filtroMeses"></div>
-        <button onclick="window.lancarGasto()" class="w-full bg-red-900/20 text-red-500 border border-red-900 p-4 rounded-xl font-black text-xs uppercase mb-6">[-] Lançar Gasto</button>
-        <div id="listaHist" class="space-y-2"></div>
-    </section>
+        <section id="t-caixa" class="hidden p-4">
+            <div class="flex gap-2 mb-4 overflow-x-auto pb-2" id="filtroMeses"></div>
+            <button onclick="window.lancarGasto()" class="w-full bg-red-900/20 text-red-500 border border-red-900 p-4 rounded-xl font-black text-xs uppercase mb-6">[-] Lançar Gasto</button>
+            <div id="listaHist" class="space-y-2"></div>
+        </section>
+    </div>
 
+    <!-- MODAL DE CONSUMO -->
     <div id="modal" class="hidden fixed inset-0 bg-black z-[100] flex flex-col p-6">
         <div class="flex justify-between items-start mb-2">
             <div>
@@ -92,6 +105,17 @@
         window.db_p = []; window.db_c = []; window.db_h = []; window.idxAtivo = null;
 
         const emojis = ['🍲','🍛','🍜','🍝','🥣','🥘','🍴','🍽️','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🥤','🧃','☕','🍵','🥛','🍖','🍗','🥩','🥓','🍔','🍟','🍕','🌭','🥪','🌯','🍳','🍢','🍤','🍱','🥗','🍿','🥡','🍦','🍰','🍩','🍪','🥨'];
+
+        // FUNÇÃO DE SENHA
+        window.verificarSenha = () => {
+            const senha = document.getElementById('senhaAcesso').value;
+            if (senha === "biribiri22") {
+                document.getElementById('tela-login').classList.add('hidden');
+                document.getElementById('app-content').classList.remove('hidden');
+            } else {
+                alert("Senha Incorreta!");
+            }
+        };
 
         function mesAtual() { return new Date().toLocaleDateString('pt-BR', {month:'long', year:'numeric'}).toUpperCase(); }
         window.fMes = mesAtual();
@@ -179,7 +203,7 @@
                 id: Date.now(), 
                 n: c.nome, 
                 v: c.total, 
-                i: resumoTxt, // Salva o que ele comeu aqui!
+                i: resumoTxt,
                 m: mesAtual(), 
                 t: 'V', 
                 d: new Date().toLocaleString()
@@ -206,11 +230,9 @@
         window.gerenciarCaixa = (idx) => {
             const item = window.db_h[idx];
             const info = `CLIENTE: ${item.n}\nVALOR: R$ ${item.v.toFixed(2)}\nCONSUMO: ${item.i || 'Não registrado'}\nDATA: ${item.d}`;
-            
             const op = prompt(`${info}\n\nDIGITE:\n1 - EXCLUIR ESTE LANÇAMENTO\n2 - SAIR`);
-            
             if(op === "1") {
-                if(confirm("Tem certeza que deseja excluir esta venda do fluxo de caixa?")) {
+                if(confirm("Tem certeza que deseja excluir esta venda?")) {
                     window.db_h.splice(idx, 1);
                     sync();
                 }
