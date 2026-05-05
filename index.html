@@ -17,7 +17,7 @@
         </div>
     </div>
 
-    <!-- CONTEÚDO DO APP (OCULTO INICIALMENTE) -->
+    <!-- CONTEÚDO DO APP -->
     <div id="app-content" class="hidden">
         <header class="p-4 bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
             <div class="flex justify-between items-center mb-4">
@@ -53,7 +53,10 @@
         <section id="t-config" class="hidden p-4">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="font-black text-amber-500 uppercase italic">Meus Itens</h2>
-                <button onclick="window.novoItem()" class="bg-green-600 px-3 py-1 rounded font-black text-[10px]">+ NOVO</button>
+                <div class="flex gap-2">
+                    <button onclick="window.alterarSenha()" class="bg-zinc-800 text-zinc-400 px-3 py-1 rounded font-black text-[8px] border border-zinc-700">ALTERAR SENHA</button>
+                    <button onclick="window.novoItem()" class="bg-green-600 px-3 py-1 rounded font-black text-[10px]">+ NOVO</button>
+                </div>
             </div>
             <div id="listaProdutos" class="space-y-4 mb-20"></div>
             <button onclick="window.salvarItens()" class="fixed bottom-4 left-4 right-4 bg-amber-500 text-black p-4 rounded-xl font-black shadow-2xl z-50 uppercase">Salvar no Cloud</button>
@@ -102,18 +105,27 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        window.db_p = []; window.db_c = []; window.db_h = []; window.idxAtivo = null;
+        window.db_p = []; window.db_c = []; window.db_h = []; window.db_s = "biribiri22"; window.idxAtivo = null;
 
         const emojis = ['🍲','🍛','🍜','🍝','🥣','🥘','🍴','🍽️','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🥤','🧃','☕','🍵','🥛','🍖','🍗','🥩','🥓','🍔','🍟','🍕','🌭','🥪','🌯','🍳','🍢','🍤','🍱','🥗','🍿','🥡','🍦','🍰','🍩','🍪','🥨'];
 
-        // FUNÇÃO DE SENHA
+        // LOGIN E SENHA
         window.verificarSenha = () => {
-            const senha = document.getElementById('senhaAcesso').value;
-            if (senha === "biribiri22") {
+            const senhaDigitada = document.getElementById('senhaAcesso').value;
+            if (senhaDigitada === window.db_s) {
                 document.getElementById('tela-login').classList.add('hidden');
                 document.getElementById('app-content').classList.remove('hidden');
             } else {
                 alert("Senha Incorreta!");
+            }
+        };
+
+        window.alterarSenha = () => {
+            const nova = prompt("Digite a nova senha de acesso:");
+            if(nova && nova.length > 0) {
+                window.db_s = nova;
+                sync();
+                alert("Senha alterada com sucesso! Ela será exigida no próximo acesso.");
             }
         };
 
@@ -126,6 +138,7 @@
                 window.db_p = data.produtos || [];
                 window.db_c = data.contas || [];
                 window.db_h = data.historico || [];
+                window.db_s = data.senha || "biribiri22"; // Carrega a senha do banco
                 window.renderContas();
                 window.resumo();
                 if(!document.getElementById('t-caixa').classList.contains('hidden')) window.renderCaixa();
@@ -134,7 +147,12 @@
         });
 
         async function sync() {
-            await setDoc(doc(db, "gestao", "dados"), { produtos: window.db_p, contas: window.db_c, historico: window.db_h });
+            await setDoc(doc(db, "gestao", "dados"), { 
+                produtos: window.db_p, 
+                contas: window.db_c, 
+                historico: window.db_h,
+                senha: window.db_s // Salva a senha no banco
+            });
         }
 
         window.tela = (t) => {
@@ -196,19 +214,8 @@
             const cont = {};
             if(c.lista) c.lista.forEach(x => cont[x] = (cont[x] || 0) + 1);
             const resumoTxt = Object.entries(cont).map(([n, q]) => `${q}x ${n}`).join(', ');
-
             if(zap) window.open(`https://api.whatsapp.com/send?text=PEDIDO: ${resumoTxt}%0ATOTAL: R$ ${c.total.toFixed(2)}`);
-            
-            window.db_h.push({
-                id: Date.now(), 
-                n: c.nome, 
-                v: c.total, 
-                i: resumoTxt,
-                m: mesAtual(), 
-                t: 'V', 
-                d: new Date().toLocaleString()
-            });
-            
+            window.db_h.push({id: Date.now(), n: c.nome, v: c.total, i: resumoTxt, m: mesAtual(), t: 'V', d: new Date().toLocaleString()});
             window.db_c.splice(window.idxAtivo, 1);
             sync(); window.fecharModal();
         };
@@ -231,12 +238,7 @@
             const item = window.db_h[idx];
             const info = `CLIENTE: ${item.n}\nVALOR: R$ ${item.v.toFixed(2)}\nCONSUMO: ${item.i || 'Não registrado'}\nDATA: ${item.d}`;
             const op = prompt(`${info}\n\nDIGITE:\n1 - EXCLUIR ESTE LANÇAMENTO\n2 - SAIR`);
-            if(op === "1") {
-                if(confirm("Tem certeza que deseja excluir esta venda?")) {
-                    window.db_h.splice(idx, 1);
-                    sync();
-                }
-            }
+            if(op === "1" && confirm("Confirmar exclusão?")) { window.db_h.splice(idx, 1); sync(); }
         };
 
         window.renderConfig = () => {
@@ -260,17 +262,14 @@
                 p.n = document.getElementById('pn-'+i).value;
                 p.p = parseFloat(document.getElementById('pp-'+i).value) || 0;
             });
-            sync(); alert("Salvo no Cloud!"); window.tela('vendas');
+            sync(); alert("Dados Salvos!"); window.tela('vendas');
         };
 
         window.novoItem = () => { window.db_p.push({i:'🍲', n:'NOVO', p:0}); window.renderConfig(); };
         
         window.lancarGasto = () => {
             const n = prompt("Descrição:"); const v = parseFloat(prompt("Valor:"));
-            if(n && !isNaN(v)) { 
-                window.db_h.push({id: Date.now(), n: "GASTO: "+n.toUpperCase(), v: v, i: "DESPESA MANUAL", m: mesAtual(), t: 'G', d: new Date().toLocaleString()}); 
-                sync(); 
-            }
+            if(n && !isNaN(v)) { window.db_h.push({id: Date.now(), n: "GASTO: "+n.toUpperCase(), v: v, i: "DESPESA MANUAL", m: mesAtual(), t: 'G', d: new Date().toLocaleString()}); sync(); }
         };
 
         window.resumo = () => {
