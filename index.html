@@ -87,17 +87,17 @@
     </div>
 
     <script>
-        let db_p = JSON.parse(localStorage.getItem('bar_p')) || [{i:'🍺', n:'CERVEJA', p:10}, {i:'🍛', n:'REFEIÇÃO', p:25}];
+        let db_p = JSON.parse(localStorage.getItem('bar_p')) || [{i:'🍺', n:'CERVEJA', p:10}, {i:'🍲', n:'ALMOÇO', p:25}];
         let db_c = JSON.parse(localStorage.getItem('bar_c')) || [];
         let db_h = JSON.parse(localStorage.getItem('bar_h')) || [];
         let idxAtivo = null;
         
-        // LISTA EXPANDIDA DE ÍCONES
+        // LISTA DE ÍCONES FOCO EM COMIDA QUENTE E BEBIDAS
         const emojis = [
-            '🍺','🍻','🥂','🍷','🥃','🍸','🍹','🥤','🧃','🧉','🍼','🥛','☕','🍵',
-            '🍖','🍗','🥩','🥓','🍔','🍟','🍕','🌭','🥪','🌮','🌯','🍳','🍲','🥣',
-            '🥗','🍿','🍱','🥟','🍤','🍢','🍣','🍛','🍜','🍝','🍚','🍡','🍧','🍦',
-            '🍰','🎂','🍮','🍩','🍪','🍬','🍭','🍫','🍎','🍋','🥥','🥜','🧀','🥨'
+            '🍲','🍛','🍜','🍝','🥣','🥘','🍴','🍽️', // Comidas quentes/Pratos
+            '🍺','🍻','🥂','🍷','🥃','🍸','🍹','🥤','🧃','☕','🍵','🥛', // Bebidas
+            '🍖','🍗','🥩','🥓','🍔','🍟','🍕','🌭','🥪','🌮','🌯','🍳', // Lanches/Carnes
+            '🍢','🍤','🍱','🥟','🥗','🍿','🥡','🍦','🍰','🍩','🍪','🥨'  // Petiscos/Doces
         ];
 
         function mes() { 
@@ -252,13 +252,15 @@
             save(); alert("Itens Salvos!"); tela('vendas');
         }
 
-        function novoItem() { db_p.push({i:'🍺', n:'NOVO', p:0}); renderConfig(); }
+        function novoItem() { db_p.push({i:'🍲', n:'NOVO', p:0}); renderConfig(); }
+        
         function save() {
             localStorage.setItem('bar_p', JSON.stringify(db_p));
             localStorage.setItem('bar_c', JSON.stringify(db_c));
             localStorage.setItem('bar_h', JSON.stringify(db_h));
             resumo();
         }
+
         function resumo() {
             const hMes = db_h.filter(h => h.m === mes());
             const v = hMes.filter(h => h.t === 'V').reduce((a, b) => a + b.v, 0);
@@ -267,6 +269,7 @@
             document.getElementById('totalGasto').innerText = "R$ " + g.toFixed(2);
             document.getElementById('mesAtual').innerText = mes();
         }
+
         function fecharModal() { document.getElementById('modal').classList.add('hidden'); }
         renderContas();
     </script>
