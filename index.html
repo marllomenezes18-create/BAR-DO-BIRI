@@ -91,7 +91,7 @@
 
         window.db_p = []; window.db_c = []; window.db_h = []; window.idxAtivo = null;
 
-        const emojis = ['🍲','🍛','🍜','🍝','🥣','🥘','🍴','🍽️','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🥤','🧃','☕','🍵','🥛','🍖','🍗','🥩','🥓','🍔','🍟','🍕','🌭','🥪','taco','🌯','🍳','🍢','🍤','🍱',' dumpling','🥗','🍿','🥡','🍦','🍰','🍩','🍪','🥨'];
+        const emojis = ['🍲','🍛','🍜','🍝','🥣','🥘','🍴','🍽️','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🥤','🧃','☕','🍵','🥛','🍖','🍗','🥩','🥓','🍔','🍟','🍕','🌭','🥪','🌯','🍳','🍢','🍤','🍱','🥗','🍿','🥡','🍦','🍰','🍩','🍪','🥨'];
 
         function mesAtual() { return new Date().toLocaleDateString('pt-BR', {month:'long', year:'numeric'}).toUpperCase(); }
         window.fMes = mesAtual();
@@ -133,9 +133,9 @@
 
         window.renderContas = () => {
             document.getElementById('listaContas').innerHTML = window.db_c.map((c, i) => `
-                <div onclick="window.abrirModal(${i})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex justify-between items-center">
-                    <div><p class="font-black uppercase">${c.nome}</p></div>
-                    <span class="font-black text-amber-500">R$ ${c.total.toFixed(2)}</span>
+                <div onclick="window.abrirModal(${i})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex justify-between items-center active:scale-95 transition-transform">
+                    <div><p class="font-black uppercase text-lg">${c.nome}</p></div>
+                    <span class="font-black text-amber-500 text-xl">R$ ${c.total.toFixed(2)}</span>
                 </div>`).join('');
         };
 
@@ -144,10 +144,10 @@
             document.getElementById('mNome').innerText = window.db_c[i].nome;
             updateExtrato();
             document.getElementById('mGrid').innerHTML = window.db_p.map(p => `
-                <button onclick="window.addValor('${p.n}', ${p.p})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex flex-col items-center">
+                <button onclick="window.addValor('${p.n}', ${p.p})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex flex-col items-center active:bg-zinc-700">
                     <span class="text-2xl">${p.i}</span>
-                    <span class="text-[8px] font-black uppercase">${p.n}</span>
-                    <span class="text-amber-500">R$ ${p.p.toFixed(2)}</span>
+                    <span class="text-[8px] font-black uppercase mt-1">${p.n}</span>
+                    <span class="text-amber-500 font-black">R$ ${p.p.toFixed(2)}</span>
                 </button>`).join('');
             document.getElementById('modal').classList.remove('hidden');
         };
@@ -169,18 +169,52 @@
 
         window.finalizar = (zap) => {
             const c = window.db_c[window.idxAtivo];
-            if(zap) window.open(`https://api.whatsapp.com/send?text=TOTAL: R$ ${c.total.toFixed(2)}`);
-            window.db_h.push({id: Date.now(), n: c.nome, v: c.total, m: mesAtual(), t: 'V', d: new Date().toLocaleString()});
+            const cont = {};
+            if(c.lista) c.lista.forEach(x => cont[x] = (cont[x] || 0) + 1);
+            const resumoTxt = Object.entries(cont).map(([n, q]) => `${q}x ${n}`).join(', ');
+
+            if(zap) window.open(`https://api.whatsapp.com/send?text=PEDIDO: ${resumoTxt}%0ATOTAL: R$ ${c.total.toFixed(2)}`);
+            
+            window.db_h.push({
+                id: Date.now(), 
+                n: c.nome, 
+                v: c.total, 
+                i: resumoTxt, // Salva o que ele comeu aqui!
+                m: mesAtual(), 
+                t: 'V', 
+                d: new Date().toLocaleString()
+            });
+            
             window.db_c.splice(window.idxAtivo, 1);
             sync(); window.fecharModal();
         };
 
         window.renderCaixa = () => {
             const filtrado = window.db_h.filter(h => h.m === window.fMes);
-            document.getElementById('listaHist').innerHTML = filtrado.slice().reverse().map((h) => `
-                <div class="p-4 bg-zinc-900 rounded-lg border-l-4 ${h.t==='G'?'border-red-600':'border-green-600'}">
-                    <div class="flex justify-between"><span>${h.n}</span><span class="font-black">R$ ${h.v.toFixed(2)}</span></div>
-                </div>`).join('');
+            document.getElementById('listaHist').innerHTML = filtrado.slice().reverse().map((h) => {
+                const realIdx = window.db_h.findIndex(item => item.id === h.id);
+                return `
+                <div onclick="window.gerenciarCaixa(${realIdx})" class="p-4 bg-zinc-900 rounded-lg border-l-4 ${h.t==='G'?'border-red-600':'border-green-600'} active:bg-zinc-800">
+                    <div class="flex justify-between">
+                        <span class="font-black uppercase text-xs">${h.n}</span>
+                        <span class="font-black ${h.t==='G'?'text-red-500':'text-green-500'}">R$ ${h.v.toFixed(2)}</span>
+                    </div>
+                    <p class="text-[9px] text-zinc-500 mt-1 uppercase">${h.i || 'Sem detalhes'}</p>
+                </div>`}).join('');
+        };
+
+        window.gerenciarCaixa = (idx) => {
+            const item = window.db_h[idx];
+            const info = `CLIENTE: ${item.n}\nVALOR: R$ ${item.v.toFixed(2)}\nCONSUMO: ${item.i || 'Não registrado'}\nDATA: ${item.d}`;
+            
+            const op = prompt(`${info}\n\nDIGITE:\n1 - EXCLUIR ESTE LANÇAMENTO\n2 - SAIR`);
+            
+            if(op === "1") {
+                if(confirm("Tem certeza que deseja excluir esta venda do fluxo de caixa?")) {
+                    window.db_h.splice(idx, 1);
+                    sync();
+                }
+            }
         };
 
         window.renderConfig = () => {
@@ -189,12 +223,12 @@
                     <div class="flex gap-2">
                         <input id="pi-${i}" class="w-10 bg-black p-2 rounded text-center" value="${p.i}" readonly>
                         <input id="pn-${i}" class="flex-1 bg-black p-2 rounded font-black text-xs uppercase" value="${p.n}">
-                        <button onclick="window.db_p.splice(${i},1);window.renderConfig()" class="text-red-500">X</button>
+                        <button onclick="window.db_p.splice(${i},1);window.renderConfig()" class="text-red-500 px-2 font-bold">X</button>
                     </div>
-                    <div class="flex gap-1 overflow-x-auto pb-2">
+                    <div class="flex gap-1 overflow-x-auto pb-2 custom-scroll">
                         ${emojis.map(e => `<button onclick="document.getElementById('pi-${i}').value='${e}'" class="bg-zinc-800 p-2 rounded min-w-[40px]">${e}</button>`).join('')}
                     </div>
-                    <input id="pp-${i}" type="number" class="w-full bg-black p-2 rounded text-green-500" value="${p.p}">
+                    <input id="pp-${i}" type="number" class="w-full bg-black p-2 rounded font-black text-green-500" value="${p.p}">
                 </div>`).join('');
         };
 
@@ -204,13 +238,17 @@
                 p.n = document.getElementById('pn-'+i).value;
                 p.p = parseFloat(document.getElementById('pp-'+i).value) || 0;
             });
-            sync(); alert("Salvo!"); window.tela('vendas');
+            sync(); alert("Salvo no Cloud!"); window.tela('vendas');
         };
 
         window.novoItem = () => { window.db_p.push({i:'🍲', n:'NOVO', p:0}); window.renderConfig(); };
+        
         window.lancarGasto = () => {
             const n = prompt("Descrição:"); const v = parseFloat(prompt("Valor:"));
-            if(n && !isNaN(v)) { window.db_h.push({id: Date.now(), n: "GASTO: "+n.toUpperCase(), v: v, m: mesAtual(), t: 'G', d: new Date().toLocaleString()}); sync(); }
+            if(n && !isNaN(v)) { 
+                window.db_h.push({id: Date.now(), n: "GASTO: "+n.toUpperCase(), v: v, i: "DESPESA MANUAL", m: mesAtual(), t: 'G', d: new Date().toLocaleString()}); 
+                sync(); 
+            }
         };
 
         window.resumo = () => {
@@ -226,8 +264,9 @@
     </script>
 
     <style>
-        ::-webkit-scrollbar { height: 4px; }
-        ::-webkit-scrollbar-thumb { background: #555; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar { height: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #555; border-radius: 10px; }
+        body { -webkit-tap-highlight-color: transparent; }
     </style>
 </body>
 </html>
