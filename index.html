@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bar Gestão Total</title>
+    <title>Bar Gestão WhatsApp</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-black text-white font-sans pb-24">
@@ -15,12 +15,12 @@
             <div id="mesAtual" class="bg-amber-500 text-black px-2 py-1 rounded font-black text-[10px]">---</div>
         </div>
         <div class="flex gap-2">
-            <div class="flex-1 bg-zinc-950 p-2 rounded border border-zinc-800">
-                <p class="text-[8px] text-zinc-500 font-bold uppercase">Saldo Líquido</p>
+            <div class="flex-1 bg-zinc-950 p-2 rounded border border-zinc-800 text-center">
+                <p class="text-[8px] text-zinc-500 font-bold uppercase">Saldo</p>
                 <p id="totalLucro" class="text-green-500 font-black text-lg font-mono">R$ 0,00</p>
             </div>
-            <div class="flex-1 bg-zinc-950 p-2 rounded border border-zinc-800">
-                <p class="text-[8px] text-red-500 font-bold uppercase">Despesas</p>
+            <div class="flex-1 bg-zinc-950 p-2 rounded border border-zinc-800 text-center">
+                <p class="text-[8px] text-red-500 font-bold uppercase">Gastos</p>
                 <p id="totalGasto" class="text-red-500 font-black text-lg font-mono">R$ 0,00</p>
             </div>
         </div>
@@ -39,7 +39,7 @@
             <input id="nomeCliente" type="text" placeholder="Nome do Cliente" class="flex-1 p-4 rounded-xl bg-zinc-800 text-white font-bold border border-zinc-700 outline-none">
             <button onclick="novaConta()" class="bg-amber-500 text-black px-6 rounded-xl font-black text-2xl shadow-lg">+</button>
         </div>
-        <div id="listaContas" class="space-y-2"></div>
+        <div id="listaContas" class="space-y-3"></div>
     </section>
 
     <!-- TELA 2: PRODUTOS -->
@@ -56,21 +56,35 @@
     <section id="t-caixa" class="hidden p-4">
         <div class="flex gap-2 mb-4 overflow-x-auto pb-2" id="filtroMeses"></div>
         <button onclick="lancarGasto()" class="w-full bg-red-900/20 text-red-500 border border-red-900 p-4 rounded-xl font-black text-xs uppercase mb-6">[-] Lançar Despesa</button>
-        <p class="text-[9px] text-zinc-500 mb-2 font-bold uppercase">Toque em um item para editar ou excluir:</p>
         <div id="listaHist" class="space-y-2"></div>
     </section>
 
-    <!-- MODAL DE LANÇAMENTO (BALCÃO) -->
+    <!-- MODAL DE LANÇAMENTO -->
     <div id="modal" class="hidden fixed inset-0 bg-black z-[100] flex flex-col p-6">
-        <div class="flex justify-between items-start mb-4">
+        <div class="flex justify-between items-start mb-2">
             <div>
                 <h2 id="mNome" class="text-2xl font-black italic uppercase">---</h2>
                 <div id="mTotal" class="text-4xl font-black text-amber-500 font-mono">R$ 0,00</div>
             </div>
             <button onclick="fecharModal()" class="text-3xl">&times;</button>
         </div>
-        <div id="mGrid" class="grid grid-cols-2 gap-3 overflow-y-auto mb-4 pr-1"></div>
-        <button onclick="finalizar()" class="mt-auto bg-green-600 p-5 rounded-xl font-black text-lg shadow-lg">FINALIZAR E RECEBER</button>
+        
+        <!-- Extrato do que está sendo consumido -->
+        <div class="bg-zinc-900 p-2 rounded-lg mb-4 border border-zinc-800">
+            <p class="text-[9px] text-zinc-500 font-bold uppercase mb-1">Consumo Atual:</p>
+            <div id="mExtrato" class="text-[10px] text-zinc-300 font-mono max-h-20 overflow-y-auto">Nenhum item...</div>
+        </div>
+
+        <div id="mGrid" class="grid grid-cols-2 gap-3 overflow-y-auto mb-4"></div>
+        
+        <div class="mt-auto grid grid-cols-2 gap-2">
+            <button onclick="finalizar(true)" class="bg-green-600 p-4 rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2">
+                Pagar + Zap 📱
+            </button>
+            <button onclick="finalizar(false)" class="bg-zinc-700 p-4 rounded-xl font-black text-xs uppercase">
+                Apenas Pagar
+            </button>
+        </div>
     </div>
 
     <script>
@@ -87,71 +101,81 @@
         let fMes = mes();
 
         function tela(t) {
-            document.getElementById('t-vendas').classList.add('hidden');
-            document.getElementById('t-config').classList.add('hidden');
-            document.getElementById('t-caixa').classList.add('hidden');
-            document.getElementById('t-'+t).classList.remove('hidden');
             ['vendas','config','caixa'].forEach(x => {
+                document.getElementById('t-'+x).classList.add('hidden');
                 document.getElementById('b-'+x).className = (x===t) ? "flex-1 py-3 bg-amber-500 text-black font-black rounded-lg text-[10px]" : "flex-1 py-3 bg-zinc-800 text-zinc-400 font-black rounded-lg text-[10px]";
             });
+            document.getElementById('t-'+t).classList.remove('hidden');
             if(t==='config') renderConfig();
             if(t==='caixa') renderCaixa();
         }
 
-        // BALCÃO
         function novaConta() {
             const n = document.getElementById('nomeCliente').value;
             if(!n) return;
-            db_c.push({nome: n, total: 0});
+            db_c.push({nome: n, total: 0, itens: []});
             document.getElementById('nomeCliente').value = "";
             save(); renderContas();
         }
 
         function renderContas() {
-            const l = document.getElementById('listaContas');
-            l.innerHTML = db_c.map((c, i) => `
-                <div onclick="abrirModal(${i})" class="bg-zinc-900 p-5 rounded-xl border border-zinc-800 flex justify-between items-center active:scale-95 transition-transform">
-                    <span class="font-black italic uppercase">${c.nome}</span>
-                    <span class="font-black text-amber-500">R$ ${c.total.toFixed(2)}</span>
+            document.getElementById('listaContas').innerHTML = db_c.map((c, i) => `
+                <div onclick="abrirModal(${i})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex justify-between items-center">
+                    <div>
+                        <p class="font-black italic uppercase text-lg">${c.nome}</p>
+                        <p class="text-[9px] text-zinc-500 uppercase">${c.itens.length} itens no extrato</p>
+                    </div>
+                    <span class="font-black text-amber-500 text-xl">R$ ${c.total.toFixed(2)}</span>
                 </div>`).join('');
             resumo();
         }
 
         function abrirModal(i) {
             idxAtivo = i;
-            document.getElementById('mNome').innerText = db_c[i].nome;
-            document.getElementById('mTotal').innerText = "R$ " + db_c[i].total.toFixed(2);
+            document.getElementById('mNome').innerText = db_c[idxAtivo].nome;
+            updateModalUI();
             document.getElementById('mGrid').innerHTML = db_p.map(p => `
-                <button onclick="addValor(${p.p})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex flex-col items-center active:bg-amber-500 active:text-black transition-colors">
+                <button onclick="addValor('${p.n}', ${p.p})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex flex-col items-center">
                     <span class="text-2xl">${p.i}</span>
                     <span class="text-[8px] font-black uppercase mt-1">${p.n}</span>
-                    <span class="font-black text-sm font-mono italic">R$ ${p.p}</span>
+                    <span class="font-black text-sm italic text-amber-500">R$ ${p.p}</span>
                 </button>`).join('');
             document.getElementById('modal').classList.remove('hidden');
         }
 
-        function addValor(v) {
-            db_c[idxAtivo].total += v;
-            document.getElementById('mTotal').innerText = "R$ " + db_c[idxAtivo].total.toFixed(2);
+        function addValor(nome, preco) {
+            db_c[idxAtivo].total += preco;
+            db_c[idxAtivo].itens.push(nome);
+            updateModalUI();
             save(); renderContas();
         }
 
-        function finalizar() {
-            if(!confirm("Deseja finalizar esta conta?")) return;
-            // O ID único ajuda a identificar o item para edição depois
-            db_h.push({id: Date.now(), n: db_c[idxAtivo].nome, v: db_c[idxAtivo].total, m: mes(), t: 'V', d: new Date().toLocaleString()});
-            db_c.splice(idxAtivo, 1);
-            save(); renderContas(); fecharModal();
+        function updateModalUI() {
+            const c = db_c[idxAtivo];
+            document.getElementById('mTotal').innerText = "R$ " + c.total.toFixed(2);
+            // Agrupar itens repetidos para o extrato (Ex: 2x Cerveja)
+            const contagem = {};
+            c.itens.forEach(x => contagem[x] = (contagem[x] || 0) + 1);
+            const resumoItens = Object.entries(contagem).map(([n, q]) => `${q}x ${n}`).join(', ');
+            document.getElementById('mExtrato').innerText = resumoItens || "Nenhum item...";
         }
 
-        // CAIXA E EDIÇÃO
-        function lancarGasto() {
-            const n = prompt("O que foi comprado?");
-            const v = parseFloat(prompt("Valor gasto?"));
-            if(n && v) {
-                db_h.push({id: Date.now(), n: "GASTO: "+n, v: v, m: mes(), t: 'G', d: new Date().toLocaleString()});
-                save(); renderCaixa();
+        function finalizar(enviarZap) {
+            const c = db_c[idxAtivo];
+            if(c.total <= 0) return alert("Conta vazia!");
+
+            const contagem = {};
+            c.itens.forEach(x => contagem[x] = (contagem[x] || 0) + 1);
+            const resumoItens = Object.entries(contagem).map(([n, q]) => `${q}x ${n}`).join(', ');
+
+            if(enviarZap) {
+                const msg = `*CONTA - BAR GESTÃO*\n\n👤 Cliente: *${c.nome}*\n📝 Itens: ${resumoItens}\n💰 *TOTAL: R$ ${c.total.toFixed(2)}*`;
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`);
             }
+
+            db_h.push({id: Date.now(), n: c.nome, v: c.total, i: resumoItens, m: mes(), t: 'V', d: new Date().toLocaleString()});
+            db_c.splice(idxAtivo, 1);
+            save(); renderContas(); fecharModal();
         }
 
         function renderCaixa() {
@@ -162,40 +186,34 @@
             `).join('');
 
             const filtrado = db_h.filter(h => h.m === fMes);
-            document.getElementById('listaHist').innerHTML = filtrado.slice().reverse().map((h, i) => {
-                // Pegamos o index real no array original
+            document.getElementById('listaHist').innerHTML = filtrado.slice().reverse().map((h, index) => {
                 const realIdx = db_h.findIndex(item => item.id === h.id);
                 return `
-                <div onclick="editarHistorico(${realIdx})" class="flex justify-between p-4 bg-zinc-900 rounded-lg border-l-4 ${h.t==='G'?'border-red-600':'border-green-600'} active:bg-zinc-800">
-                    <span class="text-[10px] font-black uppercase">${h.n}<br><small class="text-zinc-500 font-normal">${h.d}</small></span>
-                    <span class="${h.t==='G'?'text-red-500':'text-green-500'} font-black">R$ ${h.v.toFixed(2)}</span>
+                <div onclick="editarHistorico(${realIdx})" class="p-4 bg-zinc-900 rounded-lg border-l-4 ${h.t==='G'?'border-red-600':'border-green-600'}">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-[10px] font-black uppercase">${h.n}</span>
+                        <span class="${h.t==='G'?'text-red-500':'text-green-500'} font-black">R$ ${h.v.toFixed(2)}</span>
+                    </div>
+                    ${h.i ? `<p class="text-[8px] text-zinc-500 font-mono uppercase">${h.i}</p>` : ''}
+                    <p class="text-[7px] text-zinc-600 mt-1">${h.d}</p>
                 </div>`}).join('');
             resumo();
         }
 
         function editarHistorico(idx) {
-            const acao = prompt("Digite 1 para EDITAR ou 2 para EXCLUIR:");
-            if(acao === "1") {
-                const novoNome = prompt("Novo nome:", db_h[idx].n);
-                const novoValor = parseFloat(prompt("Novo valor:", db_h[idx].v));
-                if(novoNome && !isNaN(novoValor)) {
-                    db_h[idx].n = novoNome;
-                    db_h[idx].v = novoValor;
-                    save(); renderCaixa();
-                }
-            } else if(acao === "2") {
-                if(confirm("Tem certeza que deseja apagar este registro?")) {
-                    db_h.splice(idx, 1);
-                    save(); renderCaixa();
-                }
+            const op = prompt("1-Editar Nome/Valor, 2-Excluir, 0-Sair");
+            if(op==="1") {
+                db_h[idx].n = prompt("Novo Nome:", db_h[idx].n);
+                db_h[idx].v = parseFloat(prompt("Novo Valor:", db_h[idx].v));
+                save(); renderCaixa();
+            } else if(op==="2") {
+                if(confirm("Excluir registro?")) { db_h.splice(idx,1); save(); renderCaixa(); }
             }
         }
 
-        // PRODUTOS
         function renderConfig() {
-            const l = document.getElementById('listaProdutos');
-            l.innerHTML = db_p.map((p, i) => `
-                <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 space-y-3">
+            document.getElementById('listaProdutos').innerHTML = db_p.map((p, i) => `
+                <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 space-y-2">
                     <div class="flex gap-2">
                         <input id="pi-${i}" class="w-10 bg-black p-2 rounded text-center" value="${p.i}" readonly>
                         <input id="pn-${i}" class="flex-1 bg-black p-2 rounded font-black text-xs uppercase" value="${p.n}">
@@ -204,8 +222,14 @@
                     <div class="flex gap-1 overflow-x-auto pb-1">
                         ${emojis.map(e => `<button onclick="document.getElementById('pi-${i}').value='${e}'" class="bg-zinc-800 p-2 rounded">${e}</button>`).join('')}
                     </div>
-                    <input id="pp-${i}" type="number" class="w-full bg-black p-3 rounded font-black text-green-500" value="${p.p}">
+                    <input id="pp-${i}" type="number" class="w-full bg-black p-2 rounded font-black text-green-500" value="${p.p}">
                 </div>`).join('');
+        }
+
+        function lancarGasto() {
+            const n = prompt("Gasto com o que?");
+            const v = parseFloat(prompt("Valor?"));
+            if(n && v) { db_h.push({id: Date.now(), n: "GASTO: "+n, v: v, m: mes(), t: 'G', d: new Date().toLocaleString()}); save(); renderCaixa(); }
         }
 
         function salvarItens() {
@@ -214,19 +238,16 @@
                 p.n = document.getElementById('pn-'+i).value;
                 p.p = parseFloat(document.getElementById('pp-'+i).value) || 0;
             });
-            save(); alert("Cardápio atualizado!"); tela('vendas');
+            save(); alert("Salvo!"); tela('vendas');
         }
 
-        function novoItem() { db_p.push({i:'🏷️', n:'NOVO PRODUTO', p:0}); renderConfig(); }
-
-        // SISTEMA
+        function novoItem() { db_p.push({i:'🏷️', n:'NOVO', p:0}); renderConfig(); }
         function save() {
             localStorage.setItem('bar_p', JSON.stringify(db_p));
             localStorage.setItem('bar_c', JSON.stringify(db_c));
             localStorage.setItem('bar_h', JSON.stringify(db_h));
             resumo();
         }
-
         function resumo() {
             const hMes = db_h.filter(h => h.m === mes());
             const v = hMes.filter(h => h.t === 'V').reduce((a, b) => a + b.v, 0);
@@ -235,10 +256,7 @@
             document.getElementById('totalGasto').innerText = "R$ " + g.toFixed(2);
             document.getElementById('mesAtual').innerText = mes();
         }
-
         function fecharModal() { document.getElementById('modal').classList.add('hidden'); }
-
-        // Início
         renderContas();
     </script>
 </body>
