@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bar Gestão 100% Funcional</title>
+    <title>Bar Gestão Oficial</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-black text-white font-sans pb-24">
@@ -16,12 +16,8 @@
         </div>
         <div class="flex gap-2">
             <div class="flex-1 bg-zinc-950 p-2 rounded border border-zinc-800 text-center">
-                <p class="text-[8px] text-zinc-500 font-bold uppercase">Saldo</p>
+                <p class="text-[8px] text-zinc-500 font-bold uppercase">Saldo Total</p>
                 <p id="totalLucro" class="text-green-500 font-black text-lg font-mono">R$ 0,00</p>
-            </div>
-            <div class="flex-1 bg-zinc-950 p-2 rounded border border-zinc-800 text-center">
-                <p class="text-[8px] text-red-500 font-bold uppercase">Gasto</p>
-                <p id="totalGasto" class="text-red-500 font-black text-lg font-mono">R$ 0,00</p>
             </div>
         </div>
     </header>
@@ -30,23 +26,23 @@
     <nav class="flex p-2 bg-zinc-900 gap-1 border-b border-zinc-800">
         <button onclick="tela('vendas')" class="flex-1 py-3 bg-amber-500 text-black font-black rounded-lg text-[10px]" id="b-vendas">BALCÃO</button>
         <button onclick="tela('config')" class="flex-1 py-3 bg-zinc-800 text-zinc-400 font-black rounded-lg text-[10px]" id="b-config">PRODUTOS</button>
-        <button onclick="tela('caixa')" class="flex-1 py-3 bg-zinc-800 text-zinc-400 font-black rounded-lg text-[10px]" id="b-caixa">CAIXA</button>
+        <button onclick="tela('caixa')" class="flex-1 py-3 bg-zinc-800 text-zinc-400 font-black rounded-lg text-[10px]" id="b-caixa">HISTÓRICO</button>
     </nav>
 
     <!-- TELA 1: BALCÃO -->
     <section id="t-vendas" class="p-4">
         <div class="flex gap-2 mb-6">
             <input id="nomeCliente" type="text" placeholder="Nome do Cliente" class="flex-1 p-4 rounded-xl bg-zinc-800 text-white font-bold border border-zinc-700 outline-none">
-            <button onclick="novaConta()" class="bg-amber-500 text-black px-6 rounded-xl font-black text-2xl">+</button>
+            <button onclick="novaConta()" class="bg-amber-500 text-black px-6 rounded-xl font-black text-2xl active:scale-90 transition-all">+</button>
         </div>
         <div id="listaContas" class="space-y-3"></div>
     </section>
 
     <!-- TELA 2: PRODUTOS -->
     <section id="t-config" class="hidden p-4">
-        <div id="listaProdutos" class="space-y-4 mb-20"></div>
-        <button onclick="novoItem()" class="w-full bg-zinc-800 p-3 rounded-lg mb-4 font-bold text-xs">+ NOVO PRODUTO</button>
-        <button onclick="salvarItens()" class="fixed bottom-4 left-4 right-4 bg-amber-500 text-black p-4 rounded-xl font-black">SALVAR CARDÁPIO</button>
+        <div id="listaProdutos" class="space-y-3 mb-20"></div>
+        <button onclick="novoItem()" class="w-full bg-zinc-800 p-3 rounded-lg mb-4 font-bold text-xs uppercase">+ Adicionar Novo Produto</button>
+        <button onclick="salvarItens()" class="fixed bottom-4 left-4 right-4 bg-amber-500 text-black p-4 rounded-xl font-black uppercase text-sm">Salvar Cardápio</button>
     </section>
 
     <!-- TELA 3: CAIXA -->
@@ -54,26 +50,26 @@
         <div id="listaHist" class="space-y-2"></div>
     </section>
 
-    <!-- MODAL -->
+    <!-- MODAL DE CONSUMO -->
     <div id="modal" class="hidden fixed inset-0 bg-black z-[100] flex flex-col p-6">
-        <div class="flex justify-between items-start mb-2">
+        <div class="flex justify-between items-start mb-4">
             <div>
                 <h2 id="mNome" class="text-2xl font-black italic uppercase text-amber-500">---</h2>
                 <div id="mTotal" class="text-4xl font-black font-mono">R$ 0,00</div>
             </div>
-            <button onclick="fecharModal()" class="text-3xl">&times;</button>
+            <button onclick="fecharModal()" class="text-4xl text-zinc-500">&times;</button>
         </div>
         
-        <div class="bg-zinc-900 p-3 rounded-lg mb-4 border border-zinc-800">
-            <p class="text-[8px] text-zinc-500 font-black mb-1 uppercase">O que consumiu:</p>
-            <div id="mExtrato" class="text-xs text-green-400 font-bold">Nada ainda...</div>
+        <div class="bg-zinc-900 p-4 rounded-xl mb-4 border border-zinc-800">
+            <p class="text-[9px] text-zinc-500 font-black mb-2 uppercase tracking-widest">Itens Consumidos:</p>
+            <div id="mExtrato" class="text-sm text-green-400 font-bold italic leading-tight">Nenhum item adicionado...</div>
         </div>
 
         <div id="mGrid" class="grid grid-cols-2 gap-3 overflow-y-auto mb-4"></div>
         
         <div class="mt-auto grid grid-cols-2 gap-2">
-            <button onclick="finalizar(true)" class="bg-green-600 p-4 rounded-xl font-black text-[10px] uppercase">PAGAR + ZAP 📱</button>
-            <button onclick="finalizar(false)" class="bg-zinc-800 p-4 rounded-xl font-black text-[10px] uppercase">SÓ PAGAR</button>
+            <button onclick="finalizar(true)" class="bg-green-600 p-5 rounded-xl font-black text-[10px] uppercase shadow-lg active:bg-green-700">PAGAR + WHATSAPP 📱</button>
+            <button onclick="finalizar(false)" class="bg-zinc-800 p-5 rounded-xl font-black text-[10px] uppercase active:bg-zinc-700">SÓ FINALIZAR</button>
         </div>
     </div>
 
@@ -86,7 +82,10 @@
         function mes() { return new Date().toLocaleDateString('pt-BR', {month:'long', year:'numeric'}).toUpperCase(); }
 
         function tela(t) {
-            ['vendas','config','caixa'].forEach(x => document.getElementById('t-'+x).classList.add('hidden'));
+            ['vendas','config','caixa'].forEach(x => {
+                document.getElementById('t-'+x).classList.add('hidden');
+                document.getElementById('b-'+x).className = (x===t) ? "flex-1 py-3 bg-amber-500 text-black font-black rounded-lg text-[10px]" : "flex-1 py-3 bg-zinc-800 text-zinc-400 font-black rounded-lg text-[10px]";
+            });
             document.getElementById('t-'+t).classList.remove('hidden');
             if(t==='config') renderConfig();
             if(t==='caixa') renderCaixa();
@@ -94,18 +93,17 @@
 
         function novaConta() {
             const input = document.getElementById('nomeCliente');
-            if(!input.value) return;
-            db_c.push({ nome: input.value.toUpperCase(), total: 0, itens: [] });
+            if(!input.value.trim()) return;
+            db_c.push({ nome: input.value.trim().toUpperCase(), total: 0, itens: [] });
             input.value = "";
             save(); renderContas();
         }
 
         function renderContas() {
-            const lista = document.getElementById('listaContas');
-            lista.innerHTML = db_c.map((c, i) => `
-                <div onclick="abrirModal(${i})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex justify-between items-center">
-                    <div><p class="font-black italic uppercase text-lg">${c.nome}</p></div>
-                    <span class="font-black text-amber-500 text-xl">R$ ${c.total.toFixed(2)}</span>
+            document.getElementById('listaContas').innerHTML = db_c.map((c, i) => `
+                <div onclick="abrirModal(${i})" class="bg-zinc-900 p-5 rounded-2xl border border-zinc-800 flex justify-between items-center active:bg-zinc-800">
+                    <div><p class="font-black italic uppercase text-lg leading-none">${c.nome}</p></div>
+                    <span class="font-black text-amber-500 text-xl font-mono">R$ ${c.total.toFixed(2)}</span>
                 </div>`).join('');
             resumo();
         }
@@ -113,20 +111,22 @@
         function abrirModal(i) {
             idxAtivo = i;
             const c = db_c[idxAtivo];
+            if(!c.itens) c.itens = []; // Garantia de segurança
+            
             document.getElementById('mNome').innerText = c.nome;
             updateUI();
             
             document.getElementById('mGrid').innerHTML = db_p.map(p => `
-                <button onclick="add('${p.n}', ${p.p})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
-                    <span class="text-xl">${p.i}</span><br>
-                    <span class="text-[8px] font-black uppercase">${p.n}</span><br>
-                    <span class="text-amber-500 font-bold">R$ ${p.p}</span>
+                <button onclick="addItem('${p.n}', ${p.p})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 active:bg-amber-500 active:text-black transition-all">
+                    <span class="text-2xl">${p.i}</span><br>
+                    <span class="text-[9px] font-black uppercase block mt-1">${p.n}</span>
+                    <span class="text-amber-500 font-bold text-sm italic">R$ ${p.p.toFixed(2)}</span>
                 </button>`).join('');
             document.getElementById('modal').classList.remove('hidden');
         }
 
-        function add(nome, valor) {
-            db_c[idxAtivo].total += valor;
+        function addItem(nome, preco) {
+            db_c[idxAtivo].total += preco;
             db_c[idxAtivo].itens.push(nome);
             updateUI();
             save();
@@ -137,43 +137,51 @@
             const c = db_c[idxAtivo];
             document.getElementById('mTotal').innerText = "R$ " + c.total.toFixed(2);
             
-            const cont = {};
-            c.itens.forEach(x => cont[x] = (cont[x] || 0) + 1);
-            const txt = Object.entries(cont).map(([n, q]) => `${q}x ${n}`).join(', ');
-            document.getElementById('mExtrato').innerText = txt || "Nada ainda...";
+            // Agrupar itens repetidos no texto (Ex: 2x Cerveja)
+            const contagem = {};
+            c.itens.forEach(x => contagem[x] = (contagem[x] || 0) + 1);
+            const resumoTxt = Object.entries(contagem).map(([n, q]) => `${q}x ${n}`).join(', ');
+            
+            document.getElementById('mExtrato').innerText = resumoTxt || "Nenhum item adicionado...";
         }
 
         function finalizar(zap) {
             const c = db_c[idxAtivo];
-            const cont = {};
-            c.itens.forEach(x => cont[x] = (cont[x] || 0) + 1);
-            const resumoTxt = Object.entries(cont).map(([n, q]) => `${q}x ${n}`).join(', ');
+            if(c.total <= 0) return alert("Adicione produtos primeiro!");
+
+            const contagem = {};
+            c.itens.forEach(x => contagem[x] = (contagem[x] || 0) + 1);
+            const resumoTxt = Object.entries(contagem).map(([n, q]) => `${q}x ${n}`).join(', ');
 
             if(zap) {
-                const msg = `*CONTA DO BAR*\nCliente: *${c.nome}*\nConsumo: ${resumoTxt}\nTotal: *R$ ${c.total.toFixed(2)}*`;
+                const msg = `*RECIBO - BAR GESTÃO*\n\n👤 Cliente: *${c.nome}*\n📝 Consumo: ${resumoTxt}\n💰 *TOTAL: R$ ${c.total.toFixed(2)}*\n\n_Obrigado e volte sempre!_`;
                 window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(msg));
             }
 
-            db_h.push({ n: c.nome, v: c.total, i: resumoTxt, m: mes(), d: new Date().toLocaleString() });
+            db_h.push({ n: c.nome, v: c.total, i: resumoTxt, m: mes(), d: new Date().toLocaleString('pt-BR') });
             db_c.splice(idxAtivo, 1);
             save(); renderContas(); fecharModal();
         }
 
         function renderCaixa() {
             document.getElementById('listaHist').innerHTML = db_h.slice().reverse().map(h => `
-                <div class="p-3 bg-zinc-900 rounded border-l-4 border-green-600 mb-2">
-                    <div class="flex justify-between font-bold text-xs"><span>${h.n}</span><span>R$ ${h.v.toFixed(2)}</span></div>
-                    <p class="text-[8px] text-zinc-500">${h.i}</p>
+                <div class="p-4 bg-zinc-900 rounded-xl border-l-4 border-green-600 mb-2">
+                    <div class="flex justify-between font-black text-xs mb-1">
+                        <span class="uppercase">${h.n}</span>
+                        <span class="text-green-500">R$ ${h.v.toFixed(2)}</span>
+                    </div>
+                    <p class="text-[9px] text-zinc-500 italic font-mono uppercase">${h.i}</p>
                 </div>`).join('');
             resumo();
         }
 
         function renderConfig() {
             document.getElementById('listaProdutos').innerHTML = db_p.map((p, i) => `
-                <div class="bg-zinc-900 p-3 rounded flex gap-2 mb-2">
-                    <input id="pi-${i}" class="w-8 bg-black text-center" value="${p.i}">
-                    <input id="pn-${i}" class="flex-1 bg-black px-2 uppercase text-xs" value="${p.n}">
-                    <input id="pp-${i}" type="number" class="w-16 bg-black text-green-500 px-1" value="${p.p}">
+                <div class="bg-zinc-900 p-4 rounded-xl flex gap-2 border border-zinc-800">
+                    <input id="pi-${i}" class="w-10 bg-black text-center text-xl rounded" value="${p.i}">
+                    <input id="pn-${i}" class="flex-1 bg-black px-3 uppercase text-xs font-bold rounded" value="${p.n}">
+                    <input id="pp-${i}" type="number" class="w-20 bg-black text-green-500 px-2 font-bold rounded" value="${p.p}">
+                    <button onclick="db_p.splice(${i},1);renderConfig()" class="text-red-500 font-bold px-2">X</button>
                 </div>`).join('');
         }
 
@@ -183,21 +191,25 @@
                 p.n = document.getElementById('pn-'+i).value;
                 p.p = parseFloat(document.getElementById('pp-'+i).value) || 0;
             });
-            save(); alert("Salvo!");
+            save(); alert("Cardápio Atualizado!"); tela('vendas');
         }
 
         function novoItem() { db_p.push({i:'🍺', n:'NOVO', p:0}); renderConfig(); }
+        
         function save() {
             localStorage.setItem('bar_p', JSON.stringify(db_p));
             localStorage.setItem('bar_c', JSON.stringify(db_c));
             localStorage.setItem('bar_h', JSON.stringify(db_h));
         }
+
         function resumo() {
             const v = db_h.filter(h => h.m === mes()).reduce((a, b) => a + b.v, 0);
             document.getElementById('totalLucro').innerText = "R$ " + v.toFixed(2);
             document.getElementById('mesAtual').innerText = mes();
         }
+
         function fecharModal() { document.getElementById('modal').classList.add('hidden'); }
+
         renderContas();
     </script>
 </body>
