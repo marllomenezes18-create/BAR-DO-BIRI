@@ -1,19 +1,298 @@
-// SINCRONIZAÇÃO EM TEMPO REAL
-onSnapshot(doc(db, "gestao", "dados"), (snap) => {
-    if (snap.exists()) {
-        const data = snap.data();
-        window.db_p = data.produtos || [];
-        window.db_c = data.contas || [];
-        window.db_h = data.historico || [];
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bar Gestão Total - Cloud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCsqUeXLDpUhxvHxXOC19iRoQhPuYOGpFw",
+            authDomain: "amigosaru-6a228.firebaseapp.com",
+            projectId: "amigosaru-6a228",
+            storageBucket: "amigosaru-6a228.firebasestorage.app",
+            messagingSenderId: "1024825583351",
+            appId: "1:1024825583351:web:c37fe689a4ffa6fe6c55f2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // VARIÁVEIS GLOBAIS ACESSÍVEIS
+        window.db_p = [];
+        window.db_c = [];
+        window.db_h = [];
+        window.idxAtivo = null;
+
+        const emojis = [
+            '🍲','🍛','🍜','🍝','🥣','🥘','🍴','🍽️', 
+            '🍺','🍻','🥂','🍷','🥃','🍸','🍹','🥤','🧃','☕','🍵','🥛', 
+            '🍖','🍗','🥩','🥓','🍔','🍟','🍕','🌭','🥪','🌮','🌯','🍳', 
+            '🍢','🍤','🍱','🥟','🥗','🍿','🥡','🍦','🍰','🍩','🍪','🥨'
+        ];
+
+        function mesAtual() {
+            return new Date().toLocaleDateString('pt-BR', {month:'long', year:'numeric'}).toUpperCase();
+        }
+        window.fMes = mesAtual();
+
+        // SINCRONIZAÇÃO EM TEMPO REAL (FIX CELULAR/PC)
+        onSnapshot(doc(db, "gestao", "dados"), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                window.db_p = data.produtos || [];
+                window.db_c = data.contas || [];
+                window.db_h = data.historico || [];
+                
+                renderContas();
+                resumo();
+                if(!document.getElementById('t-caixa').classList.contains('hidden')) renderCaixa();
+                if(!document.getElementById('t-config').classList.contains('hidden')) renderConfig();
+            } else {
+                sync(); // Cria o documento inicial se não existir
+            }
+        });
+
+        async function sync() {
+            await setDoc(doc(db, "gestao", "dados"), {
+                produtos: window.db_p,
+                contas: window.db_c,
+                historico: window.db_h
+            });
+        }
+
+        // --- FUNÇÕES DE INTERFACE ---
+        window.tela = (t) => {
+            ['vendas','config','caixa'].forEach(x => {
+                document.getElementById('t-'+x).classList.add('hidden');
+                document.getElementById('b-'+x).className = (x===t) ? "flex-1 py-3 bg-amber-500 text-black font-black rounded-lg text-[10px]" : "flex-1 py-3 bg-zinc-800 text-zinc-400 font-black rounded-lg text-[10px]";
+            });
+            document.getElementById('t-'+t).classList.remove('hidden');
+            if(t==='config') renderConfig();
+            if(t==='caixa') renderCaixa();
+        };
+
+        window.novaConta = () => {
+            const n = document.getElementById('nomeCliente').value;
+            if(!n) return;
+            window.db_c.push({nome: n.toUpperCase(), total: 0, lista: []});
+            document.getElementById('nomeCliente').value = "";
+            sync();
+        };
+
+        window.renderContas = () => {
+            const lista = document.getElementById('listaContas');
+            if(!lista) return;
+            lista.innerHTML = window.db_c.map((c, i) => `
+                <div onclick="abrirModal(${i})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex justify-between items-center active:scale-95 transition-transform">
+                    <div>
+                        <p class="font-black italic uppercase text-lg">${c.nome}</p>
+                        <p class="text-[9px] text-zinc-500 uppercase">${c.lista ? c.lista.length : 0} itens</p>
+                    </div>
+                    <span class="font-black text-amber-500 text-xl">R$ ${c.total.toFixed(2)}</span>
+                </div>`).join('');
+        };
+
+        window.abrirModal = (i) => {
+            window.idxAtivo = i;
+            document.getElementById('mNome').innerText = window.db_c[i].nome;
+            updateExtrato();
+            document.getElementById('mGrid').innerHTML = window.db_p.map(p => `
+                <button onclick="addValor('${p.n}', ${p.p})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex flex-col items-center active:bg-zinc-700">
+                    <span class="text-2xl">${p.i}</span>
+                    <span class="text-[8px] font-black uppercase mt-1 text-center">${p.n}</span>
+                    <span class="font-black text-sm italic text-amber-500">R$ ${p.p.toFixed(2)}</span>
+                </button>`).join('');
+            document.getElementById('modal').classList.remove('hidden');
+        };
+
+        window.addValor = (nome, preco) => {
+            window.db_c[window.idxAtivo].total += preco;
+            if(!window.db_c[window.idxAtivo].lista) window.db_c[window.idxAtivo].lista = [];
+            window.db_c[window.idxAtivo].lista.push(nome);
+            updateExtrato();
+            sync();
+        };
+
+        function updateExtrato() {
+            const c = window.db_c[window.idxAtivo];
+            document.getElementById('mTotal').innerText = "R$ " + c.total.toFixed(2);
+            const cont = {};
+            if(c.lista) c.lista.forEach(x => cont[x] = (cont[x] || 0) + 1);
+            document.getElementById('mExtrato').innerText = Object.entries(cont).map(([n, q]) => `${q}x ${n}`).join(', ') || "Vazio";
+        }
+
+        window.finalizar = (zap) => {
+            const c = window.db_c[window.idxAtivo];
+            if(c.total <= 0) return;
+            const cont = {};
+            if(c.lista) c.lista.forEach(x => cont[x] = (cont[x] || 0) + 1);
+            const resumoTxt = Object.entries(cont).map(([n, q]) => `${q}x ${n}`).join(', ');
+
+            if(zap) {
+                const tZap = `*RECIBO - BAR GESTÃO*\n👤 *${c.nome}*\n📝 ${resumoTxt}\n💰 *TOTAL: R$ ${c.total.toFixed(2)}*`;
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(tZap)}`);
+            }
+
+            window.db_h.push({id: Date.now(), n: c.nome, v: c.total, i: resumoTxt, m: mesAtual(), t: 'V', d: new Date().toLocaleString()});
+            window.db_c.splice(window.idxAtivo, 1);
+            sync();
+            window.fecharModal();
+        };
+
+        window.renderCaixa = () => {
+            const meses = [...new Set(window.db_h.map(h => h.m))];
+            if(!meses.includes(mesAtual())) meses.push(mesAtual());
+            document.getElementById('filtroMeses').innerHTML = meses.map(m => `
+                <button onclick="window.fMes='${m}';window.renderCaixa()" class="px-4 py-2 rounded-lg text-[9px] font-black ${window.fMes===m?'bg-amber-500 text-black':'bg-zinc-800 text-zinc-500'} uppercase whitespace-nowrap">${m}</button>
+            `).join('');
+            const filtrado = window.db_h.filter(h => h.m === window.fMes);
+            document.getElementById('listaHist').innerHTML = filtrado.slice().reverse().map((h) => {
+                const realIdx = window.db_h.findIndex(item => item.id === h.id);
+                return `
+                <div onclick="editarHistorico(${realIdx})" class="p-4 bg-zinc-900 rounded-lg border-l-4 ${h.t==='G'?'border-red-600':'border-green-600'}">
+                    <div class="flex justify-between items-start">
+                        <span class="text-[10px] font-black uppercase">${h.n}</span>
+                        <span class="${h.t==='G'?'text-red-500':'text-green-500'} font-black">R$ ${h.v.toFixed(2)}</span>
+                    </div>
+                </div>`}).join('');
+        };
+
+        window.editarHistorico = (idx) => {
+            const op = prompt("1-Editar, 2-Excluir");
+            if(op==="1") {
+                window.db_h[idx].n = prompt("Nome:", window.db_h[idx].n);
+                window.db_h[idx].v = parseFloat(prompt("Valor:", window.db_h[idx].v));
+                sync();
+            } else if(op==="2") {
+                if(confirm("Excluir?")) { window.db_h.splice(idx,1); sync(); }
+            }
+        };
+
+        window.renderConfig = () => {
+            document.getElementById('listaProdutos').innerHTML = window.db_p.map((p, i) => `
+                <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 space-y-2">
+                    <div class="flex gap-2">
+                        <input id="pi-${i}" class="w-10 bg-black p-2 rounded text-center" value="${p.i}" readonly>
+                        <input id="pn-${i}" class="flex-1 bg-black p-2 rounded font-black text-xs uppercase" value="${p.n}">
+                        <button onclick="window.db_p.splice(${i},1);window.renderConfig()" class="text-red-500 px-2 font-bold">X</button>
+                    </div>
+                    <div class="flex gap-1 overflow-x-auto pb-2 custom-scroll">
+                        ${emojis.map(e => `<button onclick="document.getElementById('pi-${i}').value='${e}'" class="bg-zinc-800 p-2 rounded min-w-[40px]">${e}</button>`).join('')}
+                    </div>
+                    <input id="pp-${i}" type="number" class="w-full bg-black p-2 rounded font-black text-green-500" value="${p.p}">
+                </div>`).join('');
+        };
+
+        window.salvarItens = () => {
+            window.db_p.forEach((p, i) => {
+                p.i = document.getElementById('pi-'+i).value;
+                p.n = document.getElementById('pn-'+i).value;
+                p.p = parseFloat(document.getElementById('pp-'+i).value) || 0;
+            });
+            sync();
+            alert("Salvo no Cloud!");
+            window.tela('vendas');
+        };
+
+        window.novoItem = () => { window.db_p.push({i:'🍲', n:'NOVO', p:0}); window.renderConfig(); };
         
-        // Garante que as telas atualizem com os dados novos do Cloud
-        renderContas();
-        if(document.getElementById('t-caixa').classList.contains('hidden') === false) renderCaixa();
-        resumo();
-    } else {
-        // Se o banco estiver vazio, cria a estrutura inicial para todos os aparelhos
-        sync();
-    }
-}, (error) => {
-    console.error("Erro ao ler dados: ", error);
-});
+        window.lancarGasto = () => {
+            const n = prompt("Descrição:");
+            const v = parseFloat(prompt("Valor:"));
+            if(n && !isNaN(v)) {
+                window.db_h.push({id: Date.now(), n: "GASTO: "+n.toUpperCase(), v: v, m: mesAtual(), t: 'G', d: new Date().toLocaleString()});
+                sync();
+            }
+        };
+
+        window.resumo = () => {
+            const hMes = window.db_h.filter(h => h.m === mesAtual());
+            const v = hMes.filter(h => h.t === 'V').reduce((a, b) => a + b.v, 0);
+            const g = hMes.filter(h => h.t === 'G').reduce((a, b) => a + b.v, 0);
+            document.getElementById('totalLucro').innerText = "R$ " + (v - g).toFixed(2);
+            document.getElementById('totalGasto').innerText = "R$ " + g.toFixed(2);
+            document.getElementById('mesAtual').innerText = mesAtual();
+        };
+
+        window.fecharModal = () => document.getElementById('modal').classList.add('hidden');
+    </script>
+
+    <style>
+        .custom-scroll::-webkit-scrollbar { height: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #555; border-radius: 10px; }
+        body { -webkit-tap-highlight-color: transparent; }
+    </style>
+</head>
+<body class="bg-black text-white font-sans pb-24">
+
+    <header class="p-4 bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="font-black text-amber-500 uppercase italic tracking-tighter">BAR GESTÃO CLOUD</h1>
+            <div id="mesAtual" class="bg-amber-500 text-black px-2 py-1 rounded font-black text-[10px]">---</div>
+        </div>
+        <div class="flex gap-2">
+            <div class="flex-1 bg-zinc-950 p-2 rounded border border-zinc-800 text-center">
+                <p class="text-[8px] text-zinc-500 font-bold uppercase">Saldo</p>
+                <p id="totalLucro" class="text-green-500 font-black text-lg font-mono">R$ 0,00</p>
+            </div>
+            <div class="flex-1 bg-zinc-950 p-2 rounded border border-zinc-800 text-center">
+                <p class="text-[8px] text-red-500 font-bold uppercase">Despesas</p>
+                <p id="totalGasto" class="text-red-500 font-black text-lg font-mono">R$ 0,00</p>
+            </div>
+        </div>
+    </header>
+
+    <nav class="flex p-2 bg-zinc-900 gap-1 border-b border-zinc-800">
+        <button id="b-vendas" onclick="window.tela('vendas')" class="flex-1 py-3 bg-amber-500 text-black font-black rounded-lg text-[10px]">BALCÃO</button>
+        <button id="b-config" onclick="window.tela('config')" class="flex-1 py-3 bg-zinc-800 text-zinc-400 font-black rounded-lg text-[10px]">PRODUTOS</button>
+        <button id="b-caixa" onclick="window.tela('caixa')" class="flex-1 py-3 bg-zinc-800 text-zinc-400 font-black rounded-lg text-[10px]">CAIXA</button>
+    </nav>
+
+    <section id="t-vendas" class="p-4">
+        <div class="flex gap-2 mb-6">
+            <input id="nomeCliente" type="text" placeholder="Nome do Cliente" class="flex-1 p-4 rounded-xl bg-zinc-800 text-white font-bold border border-zinc-700 outline-none">
+            <button onclick="window.novaConta()" class="bg-amber-500 text-black px-6 rounded-xl font-black text-2xl shadow-lg">+</button>
+        </div>
+        <div id="listaContas" class="space-y-3"></div>
+    </section>
+
+    <section id="t-config" class="hidden p-4">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="font-black text-amber-500 uppercase italic">Meus Itens</h2>
+            <button onclick="window.novoItem()" class="bg-green-600 px-3 py-1 rounded font-black text-[10px]">+ NOVO</button>
+        </div>
+        <div id="listaProdutos" class="space-y-4 mb-20"></div>
+        <button onclick="window.salvarItens()" class="fixed bottom-4 left-4 right-4 bg-amber-500 text-black p-4 rounded-xl font-black shadow-2xl z-50 uppercase">Salvar no Cloud</button>
+    </section>
+
+    <section id="t-caixa" class="hidden p-4">
+        <div class="flex gap-2 mb-4 overflow-x-auto pb-2" id="filtroMeses"></div>
+        <button onclick="window.lancarGasto()" class="w-full bg-red-900/20 text-red-500 border border-red-900 p-4 rounded-xl font-black text-xs uppercase mb-6">[-] Lançar Gasto</button>
+        <div id="listaHist" class="space-y-2"></div>
+    </section>
+
+    <div id="modal" class="hidden fixed inset-0 bg-black z-[100] flex flex-col p-6">
+        <div class="flex justify-between items-start mb-2">
+            <div>
+                <h2 id="mNome" class="text-2xl font-black italic uppercase">---</h2>
+                <div id="mTotal" class="text-4xl font-black text-amber-500 font-mono">R$ 0,00</div>
+            </div>
+            <button onclick="window.fecharModal()" class="text-3xl">&times;</button>
+        </div>
+        <div class="bg-zinc-900 p-3 rounded-lg mb-4 border border-zinc-800">
+            <p class="text-[9px] text-zinc-500 font-bold uppercase mb-1">Consumo:</p>
+            <div id="mExtrato" class="text-xs text-amber-200 font-medium">...</div>
+        </div>
+        <div id="mGrid" class="grid grid-cols-2 gap-3 overflow-y-auto mb-4"></div>
+        <div class="mt-auto grid grid-cols-2 gap-2">
+            <button onclick="window.finalizar(true)" class="bg-green-600 p-4 rounded-xl font-black text-[10px]">PAGAR + ZAP</button>
+            <button onclick="window.finalizar(false)" class="bg-zinc-800 p-4 rounded-xl font-black text-[10px]">SÓ PAGAR</button>
+        </div>
+    </div>
+</body>
+</html>
