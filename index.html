@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SISTEMA BAR 100%</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white font-sans pb-24">
+
+    <header class="p-4 bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="font-black text-amber-500 uppercase italic">BAR GESTÃO</h1>
+            <div id="mesAtual" class="bg-amber-500 text-black px-2 py-1 rounded font-black text-[10px]">---</div>
+        </div>
+        <div class="flex gap-2">
+            <div class="flex-1 bg-black p-2 rounded border border-zinc-800">
+                <p class="text-[8px] text-zinc-500 font-bold uppercase">Saldo</p>
+                <p id="totalLucro" class="text-green-500 font-black text-lg font-mono">R$ 0,00</p>
+            </div>
+            <div class="flex-1 bg-black p-2 rounded border border-zinc-800">
+                <p class="text-[8px] text-red-500 font-bold uppercase">Gastos</p>
+                <p id="totalGasto" class="text-red-500 font-black text-lg font-mono">R$ 0,00</p>
+            </div>
+        </div>
+    </header>
+
+    <nav class="flex p-2 bg-zinc-900 gap-1 border-b border-zinc-800">
+        <button onclick="tela('vendas')" class="flex-1 py-3 bg-amber-500 text-black font-black rounded-lg text-[10px]" id="b-vendas">BALCÃO</button>
+        <button onclick="tela('config')" class="flex-1 py-3 bg-zinc-800 text-zinc-400 font-black rounded-lg text-[10px]" id="b-config">PRODUTOS</button>
+        <button onclick="tela('caixa')" class="flex-1 py-3 bg-zinc-800 text-zinc-400 font-black rounded-lg text-[10px]" id="b-caixa">CAIXA</button>
+    </nav>
+
+    <section id="t-vendas" class="p-4">
+        <div class="flex gap-2 mb-6">
+            <input id="nomeCliente" type="text" placeholder="Nome do Cliente" class="flex-1 p-4 rounded-xl bg-zinc-800 text-white font-bold outline-none border border-zinc-700">
+            <button onclick="novaConta()" class="bg-amber-500 text-black px-6 rounded-xl font-black text-2xl">+</button>
+        </div>
+        <div id="listaContas" class="space-y-2"></div>
+    </section>
+
+    <section id="t-config" class="hidden p-4">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="font-black text-amber-500 uppercase italic">Cardápio</h2>
+            <button onclick="novoItem()" class="bg-green-600 px-3 py-1 rounded font-black text-[10px]">+ NOVO</button>
+        </div>
+        <div id="listaProdutos" class="space-y-4 mb-20"></div>
+        <button onclick="salvarItens()" class="fixed bottom-4 left-4 right-4 bg-amber-500 text-black p-4 rounded-xl font-black shadow-2xl">SALVAR ALTERAÇÕES</button>
+    </section>
+
+    <section id="t-caixa" class="hidden p-4">
+        <div class="flex gap-2 mb-4 overflow-x-auto pb-2" id="filtroMeses"></div>
+        <button onclick="lancarGasto()" class="w-full bg-red-900/20 text-red-500 border border-red-900 p-4 rounded-xl font-black text-xs uppercase mb-6">[-] Lançar Despesa</button>
+        <div id="listaHist" class="space-y-2"></div>
+    </section>
+
+    <div id="modal" class="hidden fixed inset-0 bg-black z-[100] flex flex-col p-6">
+        <div class="flex justify-between items-start mb-4">
+            <div>
+                <h2 id="mNome" class="text-2xl font-black italic uppercase">---</h2>
+                <div id="mTotal" class="text-4xl font-black text-amber-500 font-mono">R$ 0,00</div>
+            </div>
+            <button onclick="fecharModal()" class="text-3xl">&times;</button>
+        </div>
+        <div id="mGrid" class="grid grid-cols-2 gap-3 overflow-y-auto mb-4"></div>
+        <button onclick="finalizar()" class="mt-auto bg-green-600 p-4 rounded-xl font-black text-lg">PAGAR CONTA</button>
+    </div>
+
+    <script>
+        let db_p = JSON.parse(localStorage.getItem('bar_p')) || [{i:'🍺', n:'CERVEJA', p:10}, {i:'🍛', n:'REFEIÇÃO', p:25}];
+        let db_c = JSON.parse(localStorage.getItem('bar_c')) || [];
+        let db_h = JSON.parse(localStorage.getItem('bar_h')) || [];
+        let idxAtivo = null;
+        const emojis = ['🍺','🥤','💧','🍛','🥃','🍢','🍟','🍷','☕','🍦','🥡','🍰'];
+
+        function mes() { 
+            const d = new Date();
+            return d.toLocaleDateString('pt-BR', {month:'long', year:'numeric'}).toUpperCase();
+        }
+        let fMes = mes();
+
+        function tela(t) {
+            document.getElementById('t-vendas').classList.add('hidden');
+            document.getElementById('t-config').classList.add('hidden');
+            document.getElementById('t-caixa').classList.add('hidden');
+            document.getElementById('t-'+t).classList.remove('hidden');
+            
+            ['vendas','config','caixa'].forEach(x => {
+                document.getElementById('b-'+x).className = (x===t) ? "flex-1 py-3 bg-amber-500 text-black font-black rounded-lg text-[10px]" : "flex-1 py-3 bg-zinc-800 text-zinc-400 font-black rounded-lg text-[10px]";
+            });
+            if(t==='config') renderConfig();
+            if(t==='caixa') renderCaixa();
+        }
+
+        function novaConta() {
+            const n = document.getElementById('nomeCliente').value;
+            if(!n) return;
+            db_c.push({nome: n, total: 0});
+            document.getElementById('nomeCliente').value = "";
+            save(); renderContas();
+        }
+
+        function renderContas() {
+            const l = document.getElementById('listaContas');
+            l.innerHTML = db_c.map((c, i) => `
+                <div onclick="abrirModal(${i})" class="bg-zinc-900 p-5 rounded-xl border border-zinc-800 flex justify-between items-center">
+                    <span class="font-black italic uppercase">${c.nome}</span>
+                    <span class="font-black text-amber-500">R$ ${c.total.toFixed(2)}</span>
+                </div>`).join('');
+            resumo();
+        }
+
+        function abrirModal(i) {
+            idxAtivo = i;
+            document.getElementById('mNome').innerText = db_c[i].nome;
+            document.getElementById('mTotal').innerText = "R$ " + db_c[i].total.toFixed(2);
+            document.getElementById('mGrid').innerHTML = db_p.map(p => `
+                <button onclick="addValor(${p.p})" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex flex-col items-center">
+                    <span class="text-2xl">${p.i}</span>
+                    <span class="text-[8px] font-black uppercase mt-1">${p.n}</span>
+                    <span class="font-black text-sm font-mono italic">R$ ${p.p}</span>
+                </button>`).join('');
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function addValor(v) {
+            db_c[idxAtivo].total += v;
+            document.getElementById('mTotal').innerText = "R$ " + db_c[idxAtivo].total.toFixed(2);
+            save(); renderContas();
+        }
+
+        function finalizar() {
+            if(!confirm("Fechar conta?")) return;
+            db_h.push({n: db_c[idxAtivo].nome, v: db_c[idxAtivo].total, m: mes(), t: 'V', d: new Date().toLocaleString()});
+            db_c.splice(idxAtivo, 1);
+            save(); renderContas(); fecharModal();
+        }
+
+        function lancarGasto() {
+            const n = prompt("O que comprou?");
+            const v = parseFloat(prompt("Valor?"));
+            if(n && v) {
+                db_h.push({n: "COMPRA: "+n, v: v, m: mes(), t: 'G', d: new Date().toLocaleString()});
+                save(); renderCaixa();
+            }
+        }
+
+        function renderConfig() {
+            const l = document.getElementById('listaProdutos');
+            l.innerHTML = db_p.map((p, i) => `
+                <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 space-y-3">
+                    <div class="flex gap-2">
+                        <input id="pi-${i}" class="w-10 bg-black p-2 rounded text-center" value="${p.i}" readonly>
+                        <input id="pn-${i}" class="flex-1 bg-black p-2 rounded font-black text-xs uppercase" value="${p.n}">
+                        <button onclick="db_p.splice(${i},1);renderConfig()" class="text-red-500 font-bold px-2">X</button>
+                    </div>
+                    <div class="flex gap-1 overflow-x-auto pb-1">
+                        ${emojis.map(e => `<button onclick="document.getElementById('pi-${i}').value='${e}'" class="bg-zinc-800 p-2 rounded">${e}</button>`).join('')}
+                    </div>
+                    <input id="pp-${i}" type="number" class="w-full bg-black p-3 rounded font-black text-green-500" value="${p.p}">
+                </div>`).join('');
+        }
+
+        function salvarItens() {
+            db_p.forEach((p, i) => {
+                p.i = document.getElementById('pi-'+i).value;
+                p.n = document.getElementById('pn-'+i).value;
+                p.p = parseFloat(document.getElementById('pp-'+i).value) || 0;
+            });
+            save(); alert("Salvo!"); tela('vendas');
+        }
+
+        function renderCaixa() {
+            const meses = [...new Set(db_h.map(h => h.m))];
+            if(!meses.includes(mes())) meses.push(mes());
+            document.getElementById('filtroMeses').innerHTML = meses.map(m => `
+                <button onclick="fMes='${m}';renderCaixa()" class="px-4 py-2 rounded-lg text-[9px] font-black ${fMes===m?'bg-amber-500 text-black':'bg-zinc-800 text-zinc-500'} uppercase whitespace-nowrap">${m}</button>
+            `).join('');
+
+            const filtrado = db_h.filter(h => h.m === fMes);
+            document.getElementById('listaHist').innerHTML = filtrado.slice().reverse().map(h => `
+                <div class="flex justify-between p-4 bg-zinc-900 rounded-lg border-l-4 ${h.t==='G'?'border-red-600':'border-green-600'}">
+                    <span class="text-[10px] font-black uppercase">${h.n}<br><small class="text-zinc-500 font-normal">${h.d}</small></span>
+                    <span class="${h.t==='G'?'text-red-500':'text-green-500'} font-black">${h.t==='G'?'-':'+'} R$ ${h.v.toFixed(2)}</span>
+                </div>`).join('');
+            resumo();
+        }
+
+        function novoItem() { db_p.push({i:'🏷️', n:'NOVO', p:0}); renderConfig(); }
+        function save() {
+            localStorage.setItem('bar_p', JSON.stringify(db_p));
+            localStorage.setItem('bar_c', JSON.stringify(db_c));
+            localStorage.setItem('bar_h', JSON.stringify(db_h));
+            resumo();
+        }
+
+        function resumo() {
+            const hMes = db_h.filter(h => h.m === mes());
+            const v = hMes.filter(h => h.t === 'V').reduce((a, b) => a + b.v, 0);
+            const g = hMes.filter(h => h.t === 'G').reduce((a, b) => a + b.v, 0);
+            document.getElementById('totalLucro').innerText = "R$ " + (v - g).toFixed(2);
+            document.getElementById('totalGasto').innerText = "R$ " + g.toFixed(2);
+            document.getElementById('mesAtual').innerText = mes();
+        }
+
+        function fecharModal() { document.getElementById('modal').classList.add('hidden'); }
+
+        renderContas();
+    </script>
+</body>
+</html>
